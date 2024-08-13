@@ -75,6 +75,22 @@ public class TestController {
         return test.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
+
+    @DeleteMapping("/tests/{id}")
+    public ResponseEntity<Void> deleteTestById(@PathVariable Long id) {
+        logger.info("Attempting to delete test with id: {}", id);
+        try {
+            testService.deleteTestById(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("Error occurred while deleting test with id " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
  @GetMapping("/tests/{id}/results")
 public ResponseEntity<List<CandidateResult>> getCandidateByTestId(@PathVariable Long id) {
     List<CandidateResult> results = new ArrayList<>();
@@ -94,6 +110,12 @@ public ResponseEntity<List<CandidateResult>> getCandidateByTestId(@PathVariable 
         List<Condidats> candidates = testService.getCandidatesByTestId(id);
         return candidates != null ? ResponseEntity.ok(candidates) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
+
+    @GetMapping("/tests/{id}/competencies")
+public ResponseEntity<List<Competency>> getCompetenciesByTestId(@PathVariable Long testId) {
+    List<Competency> competencies = testService.getCompetenciesByTestId(testId);
+    return ResponseEntity.ok(competencies);
+}
 
 public static class CandidateResult {
     private Condidats candidate;
@@ -148,7 +170,7 @@ public static class CandidateResult {
             }
 
             // Créer le lien de test
-            String testLink = "http://localhost:3000/TakeTest/" + test.getId();
+            String testLink = "http://localhost:3000/TakeTest/" + test.getId() + "?email=" + candidate.getEmail();
 
             // Envoyer l'email
             String emailBody = "You are invited to take the test: " + test.getName() + "\n\n"
@@ -262,7 +284,7 @@ public static class CandidateResult {
                 if (candidate.getEmail() != null && !candidate.getEmail().isEmpty()) {
                     logger.info("Sending email to: {}", candidate.getEmail());
                     String emailBody = "You are invited to take the test: " + testRequest.getTestName() + "\n\n"
-                            + "Please click on the following link to take the test:\n" + testLink;
+                            + "Please click on the following link to take the test:\n" + testLink + "?email=" + candidate.getEmail();
                     emailService.sendEmail(candidate.getEmail(), "Test Invitation", emailBody);
                 }
             }
@@ -383,8 +405,8 @@ public static class SendTestRequest {
         int correctAnswers = 0;
         int totalQuestions = answerRequests.size();
         logger.info("Candidate ID: {}", answerRequests.get(0).getCandidatId());
-logger.info("Correct answers: {}", correctAnswers);
-logger.info("Total questions: {}", totalQuestions);
+        logger.info("Correct answers: {}", correctAnswers);
+        logger.info("Total questions: {}", totalQuestions);
 
 
     for (AnswerRequest answerRequest : answerRequests) {

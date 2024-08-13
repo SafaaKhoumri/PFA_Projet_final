@@ -3,11 +3,13 @@ import { TextField, Typography, Select, MenuItem, FormControl, InputLabel, Conta
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
+import { useUser } from '../UserContext';
 
 function Test1() {
   const navigate = useNavigate();
+  const { user } = useUser(); // Récupérer l'utilisateur connecté
   const [form, setForm] = useState({
-    adminEmail: '',
+    adminEmail: user?.email || '', // Utiliser l'email de l'utilisateur connecté
     domain: '',
     role: '',
     level: '',
@@ -63,7 +65,7 @@ function Test1() {
       setError('');
       navigate('/Test2', { state: form });
     } else {
-      setError("All fields are required");
+      setError("Tous les champs sont requis");
     }
   };
 
@@ -96,9 +98,11 @@ function Test1() {
               name="adminEmail"
               placeholder="Entrer votre email"
               value={form.adminEmail}
-              onChange={handleChange}
               variant="outlined"
               sx={{ padding: 1, fontSize: '1em', margin: 1, width: 'calc(50% - 20px)' }}
+              InputProps={{
+                readOnly: true, // Rendre le champ non modifiable
+              }}
             />
             <FormControl variant="outlined" sx={{ padding: 1, fontSize: '1em', margin: 1, width: 'calc(50% - 20px)' }}>
               <InputLabel>Choisir le domaine</InputLabel>
@@ -165,7 +169,8 @@ function Test1() {
               borderRadius: 30,
               margin: '0 auto',
               '&:hover': {
-                backgroundColor: isFormComplete ?'#C0C0C0' : '#aaa', color: '#232A56'
+                backgroundColor: isFormComplete ? '#C0C0C0' : '#aaa',
+                color: '#232A56',
               },
             }}
           >

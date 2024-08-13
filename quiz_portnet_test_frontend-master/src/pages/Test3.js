@@ -3,6 +3,8 @@ import axios from 'axios';
 import { grey} from '@mui/material/colors';
 import CloseIcon from '@mui/icons-material/Close';
 import Navbar from '../components/Navbar';
+import Swal from 'sweetalert2';
+
 
 import {
   Typography,
@@ -80,34 +82,49 @@ function Test3() {
 
     const competencyIds = selectedCompetencies.map(comp => comp.id);
     try {
-      console.log('Submitting test data', {
-        testName,
-        adminEmail,
-        domain,
-        role,
-        level,
-        competencyIds,
-        candidates
-      });
+        console.log('Submitting test data', {
+            testName,
+            adminEmail,
+            domain,
+            role,
+            level,
+            competencyIds,
+            candidates
+        });
 
-      const response = await axios.post('http://localhost:8088/api/createAndSendTest', {
-        testName,
-        adminEmail,
-        domaineId: domain,
-        roleId: role,
-        levelId: level,
-        competencyIds,
-        candidates
-      });
+        const response = await axios.post('http://localhost:8088/api/createAndSendTest', {
+            testName,
+            adminEmail,
+            domaineId: domain,
+            roleId: role,
+            levelId: level,
+            competencyIds,
+            candidates
+        });
 
-      alert(response.data.message || 'Test créé avec succès!');
+        Swal.fire({
+            title: 'Succès',
+            text: response.data.message || 'Test créé et envoyé avec succès!',
+            icon: 'success',
+            confirmButtonText: 'OK',
+            customClass: {
+              confirmButton: 'custom-confirm-button' 
+          },
+          didOpen: () => {
+              const confirmButton = Swal.getConfirmButton();
+              confirmButton.style.backgroundColor = '#232A56'; 
+          }
+        });
     } catch (error) {
-      console.error('Error sending emails and storing test:', error.response ? error.response.data : error.message);
-      setErrorMessage(error.response?.data || 'Failed to send emails and store test.');
+        console.error('Error sending emails and storing test:', error.response ? error.response.data : error.message);
+        alert('Échec de l\'envoi des emails et de l\'enregistrement du test.');
+  
+        setErrorMessage(error.response?.data || 'Failed to send emails and store test.');
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  };
+};
+
 
   const handleVisualizeTest = async () => {
     try {

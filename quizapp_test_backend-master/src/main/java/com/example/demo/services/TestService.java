@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.model.Test;
 import com.example.demo.model.Condidats;
 import com.example.demo.model.Question;
+import com.example.demo.model.Competency;
 import com.example.demo.repositories.TestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,15 @@ public class TestService {
         return tests;
     }
 
-    // Retourner un test spécifique par son ID
+      public void deleteTestById(Long id) {
+        try {
+            testRepository.deleteById(id);
+        } catch (Exception e) {
+            logger.error("Error deleting test with id " + id, e);
+            throw e; // Rethrow the exception after logging
+        }
+    }
+
     public Optional<Test> getTestById(Long id) {
         return testRepository.findById(id);
     }
@@ -56,7 +65,12 @@ public class TestService {
         return testOpt.map(Test::getCandidates).orElse(null);
     }
 
-     public List<Question> getQuestionsByTestId(Long id) {
+    public List<Competency> getCompetenciesByTestId(Long id) {
+        Optional<Test> testOpt = getTestById(id);
+        return testOpt.map(Test::getCompetencies).orElse(null);
+    }
+
+    public List<Question> getQuestionsByTestId(Long id) {
         Optional<Test> testOpt = getTestById(id);
         return testOpt.map(Test::getQuestions).orElse(null);
     }

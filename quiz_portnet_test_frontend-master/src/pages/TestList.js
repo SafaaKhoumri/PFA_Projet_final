@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import {
   Typography,
   List,
@@ -31,6 +31,7 @@ function TestList() {
   const [candidateEmail, setCandidateEmail] = useState('');
   const [candidateName, setCandidateName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState(null);
 
 
   useEffect(() => {
@@ -142,12 +143,40 @@ const handleSendTestToCandidate = async () => {
   try {
     const response = await axios.post(`http://localhost:8088/api/tests/${selectedTest.id}/sendToCandidate`, requestBody);
     console.log('Response:', response.data);
-    alert('Test envoyé avec succès !');
+    setIsInviteModalOpen(false);
+    Swal.fire({
+      title: 'Succès',
+      text: response.data.message || 'Test envoyé avec succès!',
+      icon: 'success',
+      confirmButtonText: 'OK',
+      customClass: {
+        confirmButton: 'custom-confirm-button' 
+    },
+    didOpen: () => {
+        const confirmButton = Swal.getConfirmButton();
+        confirmButton.style.backgroundColor = '#232A56'; 
+    }
+  });
   } catch (error) {
     console.error('Erreur lors de l\'envoi du test:', error);
-    alert('Erreur lors de l\'envoi du test.');
+    setIsInviteModalOpen(false);
+    Swal.fire({
+      title: 'Erreur',
+      text: error.response?.data || 'Échec de l\'envoi du test' ,
+      icon: 'error',
+      confirmButtonText: 'OK',
+      customClass: {
+        confirmButton: 'custom-confirm-button' 
+    },
+    didOpen: () => {
+        const confirmButton = Swal.getConfirmButton();
+        confirmButton.style.backgroundColor = '#232A56'; 
+    }
+  });
   }
 };
+
+
 
 
   return (
@@ -156,6 +185,7 @@ const handleSendTestToCandidate = async () => {
       <div style={{ display: 'flex', width: '100%', marginTop: '64px', backgroundColor: '#D9D9D9' }}>
         <Box sx={{ width: '20%', padding: 2, backgroundColor: '#232A56', color: '#fff' }}>
           <Typography variant="h6"sx={{ textDecoration: 'underline', marginBottom: '5%', fontSize: '2em' }}>Tests</Typography>
+          {error && <p>{error}</p>}
           <List>
             {tests.map(test => (
               <ListItem
@@ -271,6 +301,7 @@ const handleSendTestToCandidate = async () => {
       ) : (
         <Typography variant="body1">Aucun paramètre disponible.</Typography>
       )}
+      
     </Box>
   </Modal>
 
@@ -352,6 +383,8 @@ const handleSendTestToCandidate = async () => {
    Inviter un candidat</Typography>
     <TextField
       fullWidth
+      type="email"
+      name="email"
       margin="normal"
       label="Email du candidat"
       variant="outlined"
@@ -360,6 +393,8 @@ const handleSendTestToCandidate = async () => {
     />
     <TextField
       fullWidth
+      type="text"
+      name="name"
       margin="normal"
       label="Nom du candidat"
       variant="outlined"
