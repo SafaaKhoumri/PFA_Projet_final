@@ -8,7 +8,10 @@ public class Answer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "texte_reponse")
     private String texteReponse;
+
+    @Column(name = "est_correcte")
     private boolean estCorrecte;
 
     @ManyToOne
@@ -19,7 +22,7 @@ public class Answer {
     @JoinColumn(name = "question_id")
     private Question question;
 
-    // getters and setters
+    // Getters and setters
     public Long getId() {
         return id;
     }

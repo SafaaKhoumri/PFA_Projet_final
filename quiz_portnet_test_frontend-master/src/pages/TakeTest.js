@@ -23,7 +23,7 @@ const TestBox = styled(Paper)(({ theme }) => ({
 }));
 
 const TakeTest = () => {
-  const { id } = useParams();
+  const { id, candidatId } = useParams(); // Assume the candidate ID is passed as a route param
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState([]);
@@ -61,10 +61,12 @@ const TakeTest = () => {
     }
   };
 
+
+
   const handleSubmit = () => {
     setOpenDialog(true);
-};
-
+  };
+  
 const handleCloseDialog = (confirm) => {
     setOpenDialog(false);
     if (confirm) {
@@ -72,15 +74,22 @@ const handleCloseDialog = (confirm) => {
 
         const answerRequests = questions.map((question, index) => {
             const selectedChoice = question.choices.find(choice => choice.choiceText === answers[index]);
+            console.log("Selected Choice for question " + (index + 1) + " : ", selectedChoice); // Log for debugging
+            const isCorrect = selectedChoice ? selectedChoice.correct : false; // Corrected property name
+            console.log("Is Correct for question " + (index + 1) + " : ", isCorrect); // Log for debugging
             return {
                 questionId: question.id,
-                candidatId: 1,  
                 texteReponse: answers[index],
-                estCorrecte: selectedChoice ? selectedChoice.isCorrect : false
+                estCorrecte: isCorrect
             };
         });
 
-        fetch(`http://localhost:8088/api/tests/${id}/submit`, {
+        console.log("Answer Requests: ", answerRequests); // Log for debugging
+
+        const email = new URLSearchParams(window.location.search).get('email');
+        console.log("Email: ", email); // Log for debugging
+
+        fetch(`http://localhost:8088/api/tests/${id}/submit?email=${encodeURIComponent(email)}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -95,6 +104,9 @@ const handleCloseDialog = (confirm) => {
         }).catch(error => console.error('Error submitting test:', error));
     }
 };
+
+
+
 
 
   const handleStart = () => {

@@ -15,6 +15,8 @@ public class AnswerChoice {
 	private Question question;
 
 	private String choiceText;
+
+	@Column(name = "is_correct")
 	private boolean isCorrect;
 
 	// Getters and Setters
