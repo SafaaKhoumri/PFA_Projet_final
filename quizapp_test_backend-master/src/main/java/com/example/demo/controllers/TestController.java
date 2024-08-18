@@ -91,34 +91,43 @@ public class TestController {
     @GetMapping("/tests/{id}/results")
     public ResponseEntity<List<CandidateResult>> getCandidateByTestId(@PathVariable Long id) {
         List<CandidateResult> results = new ArrayList<>();
-        List<Condidats> candidates = testService.getCandidatesByTestId(id);
 
-        for (Condidats candidate : candidates) {
-            Optional<Score> scoreOpt = scoreRepository.findByTestIdAndCandidatId(id, candidate.getId());
-            if (scoreOpt.isPresent()) {
-                Score score = scoreOpt.get();
-                int totalQuestions = score.getTotalQuestions();
-                int correctAnswers = score.getCorrectAnswers();
-                int scorePercentage = (totalQuestions > 0) ? (correctAnswers * 100) / totalQuestions : 0;
-                results.add(new CandidateResult(candidate, scorePercentage));
-            } else {
-                results.add(new CandidateResult(candidate, 0)); // 0% if no score found
-            }
+        // Récupérer tous les candidats inscrits au test
+        Optional<Test> testOpt = testRepository.findById(id);
+        if (testOpt.isEmpty()) {
+            logger.error("Test with id " + id + " not found.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(results); // Test non trouvé
         }
 
+        Test test = testOpt.get();
+        List<Condidats> candidates = test.getCandidates();
+
+        logger.info("Number of candidates found: " + candidates.size());
+
+        for (Condidats candidate : candidates) {
+            logger.info("Processing candidate with ID: " + candidate.getId() + ", Name: " + candidate.getName());
+
+            // Récupérer le score pour chaque candidat pour ce test
+            Optional<Score> scoreOpt = scoreRepository.findByTestIdAndCandidatId(test.getId(), candidate.getId());
+
+            int scorePercentage;
+            if (scoreOpt.isPresent()) {
+                scorePercentage = scoreOpt.get().getScorePercentage();
+                logger.info("Score for candidate " + candidate.getName() + ": " + scorePercentage);
+            } else {
+                scorePercentage = -1; // Utiliser -1 ou une autre valeur spéciale pour indiquer que le candidat n'a
+                                      // pas encore de score
+                logger.warn("No score found for candidate " + candidate.getName());
+            }
+
+            // Ajouter un nouvel objet CandidateResult à la liste
+            CandidateResult result = new CandidateResult(candidate, scorePercentage);
+            results.add(result);
+        }
+
+        logger.info("Total results prepared: " + results.size());
+
         return ResponseEntity.ok(results);
-    }
-
-    @GetMapping("/tests/{id}/candidates")
-    public ResponseEntity<List<Condidats>> getCandidatesByTestId(@PathVariable Long id) {
-        List<Condidats> candidates = testService.getCandidatesByTestId(id);
-        return candidates != null ? ResponseEntity.ok(candidates) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-    }
-
-    @GetMapping("/tests/{id}/competencies")
-    public ResponseEntity<List<Competency>> getCompetenciesByTestId(@PathVariable Long testId) {
-        List<Competency> competencies = testService.getCompetenciesByTestId(testId);
-        return ResponseEntity.ok(competencies);
     }
 
     public static class CandidateResult {
@@ -137,6 +146,29 @@ public class TestController {
         public int getScorePercentage() {
             return scorePercentage;
         }
+
+        public String getFormattedScore() {
+            if (scorePercentage == -1) {
+                return "N/A"; // Afficher "N/A" si le score est absent
+            } else {
+                return scorePercentage + "%"; // Afficher le pourcentage s'il est présent
+            }
+        }
+    }
+
+    @GetMapping("/tests/{id}/candidates")
+    public ResponseEntity<List<Condidats>> getCandidatesByTestId(@PathVariable Long id) {
+        List<Condidats> candidates = testService.getCandidatesByTestId(id);
+
+        // No filtering based on scores, return all candidates
+        return candidates.isEmpty() ? ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+                : ResponseEntity.ok(candidates);
+    }
+
+    @GetMapping("/tests/{id}/competencies")
+    public ResponseEntity<List<Competency>> getCompetenciesByTestId(@PathVariable Long testId) {
+        List<Competency> competencies = testService.getCompetenciesByTestId(testId);
+        return ResponseEntity.ok(competencies);
     }
 
     @GetMapping("/tests/{id}/questions")
@@ -404,8 +436,6 @@ public class TestController {
         }
 
         Test test = testOpt.get();
-        int correctAnswers = 0;
-        int totalQuestions = answerRequests.size();
 
         Optional<Condidats> candidatOpt = candidatsRepository.findByEmail(email);
         if (!candidatOpt.isPresent()) {
@@ -413,12 +443,14 @@ public class TestController {
         }
 
         Condidats candidat = candidatOpt.get();
+        int correctAnswers = 0;
+        int totalQuestions = test.getQuestions().size();
 
         for (AnswerRequest answerRequest : answerRequests) {
             Optional<Question> questionOpt = questionRepository.findById(answerRequest.getQuestionId());
             if (questionOpt.isPresent()) {
                 Question question = questionOpt.get();
-                boolean isCorrect = answerRequest.isEstCorrecte(); // Use boolean directly
+                boolean isCorrect = answerRequest.isEstCorrecte();
 
                 logger.info("Processing answer: Question ID = {}, Answer Text = {}, IsCorrect = {}",
                         question.getId(), answerRequest.getTexteReponse(), isCorrect);
@@ -429,7 +461,7 @@ public class TestController {
 
                 Answer answer = new Answer();
                 answer.setTexteReponse(answerRequest.getTexteReponse());
-                answer.setEstCorrecte(isCorrect); // Assign boolean value
+                answer.setEstCorrecte(isCorrect);
                 answer.setCandidat(candidat);
                 answer.setQuestion(question);
                 answerRepository.save(answer);
@@ -437,14 +469,15 @@ public class TestController {
                 logger.info("Saved answer: Question ID = {}, Candidat ID = {}, EstCorrecte = {}",
                         question.getId(), candidat.getId(), isCorrect);
             }
-
         }
 
+        // Creating and saving the score
         Score score = new Score();
         score.setCandidat(candidat);
         score.setTest(test);
         score.setCorrectAnswers(correctAnswers);
         score.setTotalQuestions(totalQuestions);
+
         scoreRepository.save(score);
 
         return ResponseEntity.ok("Test submitted successfully!");
@@ -452,16 +485,24 @@ public class TestController {
 
     public static class AnswerRequest {
         private Long questionId;
+        private Long candidatId;
         private String texteReponse;
         private boolean estCorrecte;
 
-        // Getters and setters
         public Long getQuestionId() {
             return questionId;
         }
 
         public void setQuestionId(Long questionId) {
             this.questionId = questionId;
+        }
+
+        public Long getCandidatId() {
+            return candidatId;
+        }
+
+        public void setCandidatId(Long candidatId) {
+            this.candidatId = candidatId;
         }
 
         public String getTexteReponse() {
@@ -480,5 +521,4 @@ public class TestController {
             this.estCorrecte = estCorrecte;
         }
     }
-
 }

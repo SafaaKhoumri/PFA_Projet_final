@@ -1,5 +1,7 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -9,9 +11,11 @@ public class Score {
     private Long id;
 
     @ManyToOne
+    @JsonIgnore
     private Condidats candidat;
 
     @ManyToOne
+    @JsonIgnore
     private Test test;
 
     private int correctAnswers;
@@ -58,7 +62,10 @@ public class Score {
     }
 
     public int getScorePercentage() {
-        if (totalQuestions == 0) return 0;
-        return (correctAnswers * 100) / totalQuestions;
+        if (totalQuestions == 0) {
+            return 0;
+        }
+        return (int) ((correctAnswers / (double) totalQuestions) * 100);
     }
+
 }

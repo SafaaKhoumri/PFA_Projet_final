@@ -46,7 +46,7 @@ public class TestService {
         return tests;
     }
 
-      public void deleteTestById(Long id) {
+    public void deleteTestById(Long id) {
         try {
             testRepository.deleteById(id);
         } catch (Exception e) {

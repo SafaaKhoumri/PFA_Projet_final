@@ -22,15 +22,25 @@ function TestResultsPage() {
     if (selectedTest) {
       setLoading(true);
       axios.get(`http://localhost:8088/api/tests/${selectedTest}/results`)
-        .then(response => setCandidates(response.data))
+        .then(response => {
+          console.log(response.data); // Ajoutez cette ligne pour vérifier les données
+          const candidatesData = response.data.map(candidate => ({
+            ...candidate,
+            scorePercentage: candidate.scorePercentage !== undefined ? candidate.scorePercentage : null
+          }));
+          setCandidates(candidatesData);
+        })
         .catch(error => console.error('Error fetching candidates:', error))
         .finally(() => setLoading(false));
     }
   }, [selectedTest]);
+  
 
   const handleTestClick = (testId) => {
     setSelectedTest(testId);
+    setCandidates([]); // Réinitialiser les candidats lors du changement de test
   };
+  
 
   const getScoreColor = (score) => {
     if (score >= 80) return green[500];
@@ -38,10 +48,11 @@ function TestResultsPage() {
     return red[500];
   };
 
-  const filteredCandidates = candidates.filter(candidate =>
-    candidate.candidate.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCandidates = candidates.filter(candidate => 
+    candidate.candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (candidate.scorePercentage !== null || candidate.scorePercentage !== undefined)
   );
-
+  
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       <Navbar />
@@ -92,44 +103,52 @@ function TestResultsPage() {
                 onBlur={() => setSearchBgColor('#f4f4f4')} 
               />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: '3%', alignItems: 'center' }}>
-                {filteredCandidates.map(({ candidate, scorePercentage }) => (
-                  <Box 
-                    key={candidate.id} 
-                    sx={{ 
-                      width: '95%', 
-                      backgroundColor: '#fff', 
-                      borderRadius: 2, 
-                      boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)', 
-                      padding: 2,
-                      display: 'flex',
-                      alignItems: 'center', 
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="h6">{candidate.name}</Typography>
-                      <Typography variant="body2" color="textSecondary">{candidate.email}</Typography>
-                    </Box>
-                    <Box 
-                      sx={{ 
-                        width: 60, 
-                        height: 60, 
-                        borderRadius: '50%', 
-                        backgroundColor: getScoreColor(scorePercentage), 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center' 
-                      }}
-                    >
-                      <Typography variant="h6" sx={{ color: '#fff' }}>{scorePercentage}%</Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
+  {candidates.length > 0 ? (
+    candidates.map(({ candidate, scorePercentage }) => (
+      <Box 
+        key={candidate.id} 
+        sx={{ 
+          width: '95%', 
+          backgroundColor: '#fff', 
+          borderRadius: 2, 
+          boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)', 
+          padding: 2,
+          display: 'flex',
+          alignItems: 'center', 
+          justifyContent: 'space-between'
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography variant="h6">{candidate.name}</Typography>
+          <Typography variant="body2" color="textSecondary">{candidate.email}</Typography>
+        </Box>
+        <Box 
+          sx={{ 
+            width: 60, 
+            height: 60, 
+            borderRadius: '50%', 
+            backgroundColor: scorePercentage !== null ? getScoreColor(scorePercentage) : '#ccc', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center' 
+          }}
+        >
+          <Typography variant="h6" sx={{ color: '#fff' }}>
+            {scorePercentage !== null ? `${scorePercentage}%` : 'N/A'}
+          </Typography>
+        </Box>
+      </Box>
+    ))
+  ) : (
+    <Typography variant="body1" color="textSecondary">Aucun candidat n'a été trouvé pour ce test.</Typography>
+  )}
+</Box>
+
             </>
           ) : (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '64px', color: '#888888' }}>
-              <Typography variant="h4">Sélectionnez un test pour voir les résultats.</Typography> </div>
+              <Typography variant="h4">Sélectionnez un test pour voir les résultats.</Typography>
+            </div>
           )}
         </Container>
       </div>

@@ -3,6 +3,9 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Condidats {
     @Id
@@ -12,9 +15,11 @@ public class Condidats {
     private String email;
 
     @OneToMany(mappedBy = "candidat")
+    @JsonIgnore
     private List<Answer> answers;
 
     @ManyToMany(mappedBy = "candidates")
+    @JsonIgnore
     private List<Test> tests;
 
     // getters and setters

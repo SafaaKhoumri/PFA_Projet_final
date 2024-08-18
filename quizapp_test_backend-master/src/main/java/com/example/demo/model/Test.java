@@ -15,25 +15,21 @@ public class Test {
 
     @ManyToOne
     @JoinColumn(name = "administrator_id")
-    
 
     private Administrateur administrator;
 
     @ManyToOne
     @JoinColumn(name = "domaine_id")
-   
 
     private Theme domaine;
 
     @ManyToOne
     @JoinColumn(name = "role_id")
-    
 
     private Role role;
 
     @ManyToOne
     @JoinColumn(name = "level_id")
-   
 
     private Level level;
 
@@ -48,7 +44,7 @@ public class Test {
     @JsonIgnore
 
     private List<Condidats> candidates;
-    
+
     @ManyToMany
     @JoinTable(name = "questions_test", joinColumns = @JoinColumn(name = "test_id"), inverseJoinColumns = @JoinColumn(name = "question_id"))
     @JsonIgnore
